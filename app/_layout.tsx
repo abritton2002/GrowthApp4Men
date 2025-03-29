@@ -1,12 +1,14 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ErrorBoundary } from "./error-boundary";
 import colors from "@/constants/colors";
+import { useProfileStore } from "@/store/profile-store";
+import { useThemeStore } from "@/store/theme-store";
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
@@ -48,18 +50,37 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
+  const router = useRouter();
+  const segments = useSegments();
+  const { isOnboarded } = useProfileStore();
+  const theme = useThemeStore(state => state.theme);
+  const colorScheme = theme === 'dark' ? colors.dark : colors.light;
+  
+  useEffect(() => {
+    // Check if the user is on the root route
+    const inAuthGroup = segments[0] === 'onboarding';
+    
+    if (!isOnboarded && !inAuthGroup) {
+      // Redirect to the onboarding flow if not onboarded
+      router.replace('/onboarding/profile');
+    } else if (isOnboarded && inAuthGroup) {
+      // Redirect to the main app if already onboarded
+      router.replace('/');
+    }
+  }, [isOnboarded, segments, router]);
+  
   return (
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: colors.background,
+          backgroundColor: colorScheme.background,
         },
-        headerTintColor: colors.text.primary,
+        headerTintColor: colorScheme.text.primary,
         headerTitleStyle: {
           fontWeight: 'bold',
         },
         contentStyle: {
-          backgroundColor: colors.background,
+          backgroundColor: colorScheme.background,
         },
       }}
     >
@@ -82,6 +103,7 @@ function RootLayoutNav() {
         name="settings" 
         options={{ 
           title: "Settings",
+          headerShown: false,
         }} 
       />
       <Stack.Screen 
@@ -97,9 +119,28 @@ function RootLayoutNav() {
         }} 
       />
       <Stack.Screen 
+        name="journal/index" 
+        options={{ 
+          title: "Journal",
+        }} 
+      />
+      <Stack.Screen 
+        name="wisdom/index" 
+        options={{ 
+          title: "Wisdom",
+        }} 
+      />
+      <Stack.Screen 
         name="growth/history" 
         options={{ 
           title: "Growth History",
+        }} 
+      />
+      <Stack.Screen 
+        name="onboarding/profile" 
+        options={{ 
+          title: "Create Profile",
+          headerShown: false,
         }} 
       />
     </Stack>

@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Check, Circle } from 'lucide-react-native';
+import { Check } from 'lucide-react-native';
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
 import { Discipline } from '@/types/disciplines';
+import { useThemeStore } from '@/store/theme-store';
 
 interface DisciplineItemProps {
   discipline: Discipline;
@@ -16,9 +17,22 @@ export default function DisciplineItem({
   onToggleComplete,
   onEdit
 }: DisciplineItemProps) {
+  const theme = useThemeStore(state => state.theme);
+  const colorScheme = theme === 'dark' ? colors.dark : colors.light;
+  
   return (
     <TouchableOpacity 
-      style={styles.container}
+      style={[
+        styles.container,
+        { 
+          backgroundColor: colorScheme.cardBackground,
+          borderColor: colorScheme.border,
+        },
+        discipline.completed && { 
+          backgroundColor: colorScheme.cardBackgroundAlt,
+          borderColor: colorScheme.border,
+        }
+      ]}
       onPress={() => onEdit(discipline)}
       activeOpacity={0.7}
     >
@@ -27,24 +41,26 @@ export default function DisciplineItem({
         onPress={() => onToggleComplete(discipline.id)}
       >
         {discipline.completed ? (
-          <View style={styles.completedCircle}>
-            <Check size={16} color={colors.text.inverse} />
+          <View style={[styles.completedCircle, { backgroundColor: colorScheme.success }]}>
+            <Check size={16} color={colorScheme.text.inverse} />
           </View>
         ) : (
-          <View style={styles.incompleteCircle} />
+          <View style={[styles.incompleteCircle, { borderColor: colorScheme.text.muted }]} />
         )}
       </TouchableOpacity>
       
       <View style={styles.content}>
         <Text style={[
           styles.title, 
-          discipline.completed && styles.completedText
+          { color: colorScheme.text.primary },
+          discipline.completed && { color: colorScheme.text.muted, textDecorationLine: 'line-through' }
         ]}>
           {discipline.title}
         </Text>
         <Text style={[
           styles.description,
-          discipline.completed && styles.completedText
+          { color: colorScheme.text.secondary },
+          discipline.completed && { color: colorScheme.text.muted, textDecorationLine: 'line-through' }
         ]}>
           {discipline.description}
         </Text>
@@ -58,11 +74,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: colors.cardBackground,
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: colors.border,
   },
   checkButton: {
     marginRight: 16,
@@ -72,13 +86,11 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: colors.text.muted,
   },
   completedCircle: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.success,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -86,16 +98,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    ...typography.subtitle,
-    color: colors.text.primary,
+    fontSize: 18,
+    fontWeight: '600',
     marginBottom: 4,
   },
   description: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-  },
-  completedText: {
-    color: colors.text.muted,
-    textDecorationLine: 'line-through',
+    fontSize: 14,
   },
 });

@@ -6,10 +6,13 @@ import WisdomCard from '@/components/WisdomCard';
 import { useWisdomStore } from '@/store/wisdom-store';
 import { formatDate } from '@/utils/date-utils';
 import colors from '@/constants/colors';
+import { useThemeStore } from '@/store/theme-store';
 
 export default function WisdomScreen() {
   const todayEntries = useWisdomStore(state => state.todayEntries);
   const refreshTodayEntries = useWisdomStore(state => state.refreshTodayEntries);
+  const theme = useThemeStore(state => state.theme);
+  const colorScheme = theme === 'dark' ? colors.dark : colors.light;
   const [refreshing, setRefreshing] = React.useState(false);
   
   useEffect(() => {
@@ -25,7 +28,7 @@ export default function WisdomScreen() {
   }, [refreshTodayEntries]);
   
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colorScheme.background }]} edges={['top']}>
       <HeaderBar 
         title="Daily Wisdom" 
         date={formatDate(new Date())} 
@@ -38,8 +41,8 @@ export default function WisdomScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
+            colors={[colorScheme.primary]}
+            tintColor={colorScheme.primary}
           />
         }
       >
@@ -54,7 +57,6 @@ export default function WisdomScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,

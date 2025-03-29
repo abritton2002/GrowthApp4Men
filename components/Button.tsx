@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
+import { useThemeStore } from '@/store/theme-store';
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
@@ -26,21 +27,30 @@ export default function Button({
   disabled,
   ...props 
 }: ButtonProps) {
+  const theme = useThemeStore(state => state.theme);
+  const colorScheme = theme === 'dark' ? colors.dark : colors.light;
+  
   const buttonStyle = [
     styles.button,
-    variant === 'primary' && styles.primaryButton,
-    variant === 'secondary' && styles.secondaryButton,
-    variant === 'outline' && styles.outlineButton,
-    disabled && styles.disabledButton,
+    { 
+      backgroundColor: variant === 'primary' 
+        ? colorScheme.primary 
+        : variant === 'secondary' 
+          ? colorScheme.secondary 
+          : 'transparent',
+      borderColor: variant === 'outline' ? colorScheme.primary : undefined,
+      borderWidth: variant === 'outline' ? 2 : 0,
+    },
+    disabled && { backgroundColor: colorScheme.inactive, borderColor: colorScheme.inactive },
     style,
   ];
 
   const textStyle = [
     styles.text,
-    variant === 'primary' && styles.primaryText,
-    variant === 'secondary' && styles.secondaryText,
-    variant === 'outline' && styles.outlineText,
-    disabled && styles.disabledText,
+    { 
+      color: variant === 'outline' ? colorScheme.primary : colorScheme.text.primary,
+    },
+    disabled && { color: colorScheme.text.muted },
   ];
 
   return (
@@ -51,7 +61,7 @@ export default function Button({
     >
       {loading ? (
         <ActivityIndicator 
-          color={variant === 'outline' ? colors.primary : colors.text.primary} 
+          color={variant === 'outline' ? colorScheme.primary : colorScheme.text.primary} 
           size="small" 
         />
       ) : (
@@ -74,37 +84,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: 48,
   },
-  primaryButton: {
-    backgroundColor: colors.primary,
-  },
-  secondaryButton: {
-    backgroundColor: colors.secondary,
-  },
-  outlineButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: colors.primary,
-  },
-  disabledButton: {
-    backgroundColor: colors.inactive,
-    borderColor: colors.inactive,
-  },
   text: {
-    ...typography.button,
-    color: colors.text.primary,
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.5,
     textAlign: 'center',
-  },
-  primaryText: {
-    color: colors.text.primary,
-  },
-  secondaryText: {
-    color: colors.text.primary,
-  },
-  outlineText: {
-    color: colors.primary,
-  },
-  disabledText: {
-    color: colors.text.muted,
   },
   iconContainer: {
     marginRight: 8,

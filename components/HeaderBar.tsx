@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Settings } from 'lucide-react-native';
 import colors from '@/constants/colors';
-import typography from '@/constants/typography';
+import { useThemeStore } from '@/store/theme-store';
 
 interface HeaderBarProps {
   title: string;
@@ -17,24 +17,26 @@ export default function HeaderBar({
   showSettings = true 
 }: HeaderBarProps) {
   const router = useRouter();
+  const theme = useThemeStore(state => state.theme);
+  const colorScheme = theme === 'dark' ? colors.dark : colors.light;
   
   const navigateToSettings = () => {
     router.push('/settings');
   };
   
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { borderBottomColor: colorScheme.border }]}>
       <View>
-        <Text style={styles.title}>{title}</Text>
-        {date && <Text style={styles.date}>{date}</Text>}
+        <Text style={[styles.title, { color: colorScheme.text.primary }]}>{title}</Text>
+        {date && <Text style={[styles.date, { color: colorScheme.text.secondary }]}>{date}</Text>}
       </View>
       
       {showSettings && (
         <TouchableOpacity 
           onPress={navigateToSettings}
-          style={styles.settingsButton}
+          style={[styles.settingsButton, { backgroundColor: colorScheme.cardBackgroundAlt }]}
         >
-          <Settings size={24} color={colors.text.primary} />
+          <Settings size={24} color={colorScheme.text.primary} />
         </TouchableOpacity>
       )}
     </View>
@@ -49,15 +51,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   title: {
-    ...typography.h2,
-    color: colors.text.primary,
+    fontSize: 24,
+    fontWeight: 'bold',
   },
   date: {
-    ...typography.caption,
-    color: colors.text.secondary,
+    fontSize: 12,
     marginTop: 4,
   },
   settingsButton: {
@@ -66,6 +66,5 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.cardBackgroundAlt,
   },
 });

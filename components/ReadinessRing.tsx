@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, G } from 'react-native-svg';
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
+import { useThemeStore } from '@/store/theme-store';
 
 interface ReadinessRingProps {
   score: number; // 0 to 100
@@ -19,6 +20,10 @@ export default function ReadinessRing({
   zoneColor,
   zoneLabel,
 }: ReadinessRingProps) {
+  // Get current theme
+  const theme = useThemeStore(state => state.theme);
+  const colorScheme = theme === 'dark' ? colors.dark : colors.light;
+  
   // Ensure score is between 0 and 100
   const validScore = Math.min(100, Math.max(0, score));
   
@@ -35,17 +40,11 @@ export default function ReadinessRing({
     Animated.timing(animatedValue, {
       toValue: validScore / 100,
       duration: 1000,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
   }, [validScore]);
   
-  // Calculate stroke dashoffset based on animated progress
-  const strokeDashoffset = animatedValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [circumference, 0],
-  });
-
-  // For web, use a non-animated version to avoid the collapsable warning
+  // For web, use a non-animated version
   if (Platform.OS === 'web') {
     // Calculate static stroke dashoffset based on progress
     const staticDashoffset = circumference * (1 - (validScore / 100));
@@ -58,29 +57,30 @@ export default function ReadinessRing({
             cx={center}
             cy={center}
             r={radius}
-            stroke={colors.progress.track}
+            stroke={colorScheme.progress.track}
             strokeWidth={strokeWidth}
             fill="transparent"
           />
           
           {/* Progress Circle - Static for web */}
-          <Circle
-            cx={center}
-            cy={center}
-            r={radius}
-            stroke={zoneColor}
-            strokeWidth={strokeWidth}
-            fill="transparent"
-            strokeDasharray={circumference}
-            strokeDashoffset={staticDashoffset}
-            strokeLinecap="round"
-            transform={`rotate(-90, ${center}, ${center})`}
-          />
+          <G rotation="-90" origin={`${center}, ${center}`}>
+            <Circle
+              cx={center}
+              cy={center}
+              r={radius}
+              stroke={zoneColor}
+              strokeWidth={strokeWidth}
+              fill="transparent"
+              strokeDasharray={circumference}
+              strokeDashoffset={staticDashoffset}
+              strokeLinecap="round"
+            />
+          </G>
         </Svg>
         
         {/* Score and label in the center */}
         <View style={styles.scoreContainer}>
-          <Text style={styles.scoreText}>{validScore}%</Text>
+          <Text style={[styles.scoreText, { color: colorScheme.text.primary }]}>{validScore}%</Text>
           <Text style={[styles.zoneLabel, { color: zoneColor }]}>{zoneLabel}</Text>
         </View>
       </View>
@@ -90,6 +90,12 @@ export default function ReadinessRing({
   // For native platforms, use the animated version
   const AnimatedCircle = Animated.createAnimatedComponent(Circle);
   
+  // Calculate stroke dashoffset based on animated progress
+  const strokeDashoffset = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [circumference, 0],
+  });
+  
   return (
     <View style={[styles.container, { width: size, height: size }]}>
       <Svg width={size} height={size}>
@@ -98,29 +104,30 @@ export default function ReadinessRing({
           cx={center}
           cy={center}
           r={radius}
-          stroke={colors.progress.track}
+          stroke={colorScheme.progress.track}
           strokeWidth={strokeWidth}
           fill="transparent"
         />
         
         {/* Progress Circle - Animated */}
-        <AnimatedCircle
-          cx={center}
-          cy={center}
-          r={radius}
-          stroke={zoneColor}
-          strokeWidth={strokeWidth}
-          fill="transparent"
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          transform={`rotate(-90, ${center}, ${center})`}
-        />
+        <G rotation="-90" origin={`${center}, ${center}`}>
+          <AnimatedCircle
+            cx={center}
+            cy={center}
+            r={radius}
+            stroke={zoneColor}
+            strokeWidth={strokeWidth}
+            fill="transparent"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+          />
+        </G>
       </Svg>
       
       {/* Score and label in the center */}
       <View style={styles.scoreContainer}>
-        <Text style={styles.scoreText}>{validScore}%</Text>
+        <Text style={[styles.scoreText, { color: colorScheme.text.primary }]}>{validScore}%</Text>
         <Text style={[styles.zoneLabel, { color: zoneColor }]}>{zoneLabel}</Text>
       </View>
     </View>
@@ -139,9 +146,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scoreText: {
-    fontSize: 42,
+    fontSize: 48,
     fontWeight: 'bold',
-    color: colors.text.primary,
     textAlign: 'center',
   },
   zoneLabel: {
@@ -149,5 +155,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     marginTop: 4,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
 });

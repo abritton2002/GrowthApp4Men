@@ -13,7 +13,7 @@ interface ReflectionPromptProps {
 export default function ReflectionPrompt({ onPress, style }: ReflectionPromptProps) {
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-      <Card style={[styles.card, style]}>
+      <Card style={[styles.card, style]} variant="elevated">
         <View style={styles.header}>
           <View style={styles.iconContainer}>
             <BookText size={22} color={colors.primary} />
@@ -38,7 +38,7 @@ export default function ReflectionPrompt({ onPress, style }: ReflectionPromptPro
 
 const styles = StyleSheet.create({
   card: {
-    padding: 20,
+    padding: 24,
     marginHorizontal: 16,
     marginVertical: 8,
   },

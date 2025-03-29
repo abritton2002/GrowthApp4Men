@@ -1,43 +1,19 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Switch, 
-  ScrollView, 
-  TouchableOpacity,
-  Alert
-} from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { 
-  ArrowLeft, 
-  Moon, 
-  Sun, 
-  Bell, 
-  RefreshCw,
-  LogOut,
-  BookText,
-  Calendar,
-  ChevronRight,
-  Info
-} from 'lucide-react-native';
+import { RefreshCw, BookText, Calendar, ChevronRight, Info, Moon, Sun } from 'lucide-react-native';
 import Card from '@/components/Card';
-import Button from '@/components/Button';
-import { useProfileStore } from '@/store/profile-store';
 import { useDisciplinesStore } from '@/store/disciplines-store';
 import { useWisdomStore } from '@/store/wisdom-store';
 import { useJournalStore } from '@/store/journal-store';
-import { useThemeStore } from '@/store/theme-store';
+import { useLearnStore } from '@/store/learn-store';
+import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
-import typography from '@/constants/typography';
+import { useThemeStore } from '@/store/theme-store';
+import { useProfileStore } from '@/store/profile-store';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const profile = useProfileStore(state => state.profile);
-  const resetProfile = useProfileStore(state => state.resetProfile);
-  const updateSettings = useProfileStore(state => state.updateSettings);
-  
   const resetCompletionStatus = useDisciplinesStore(state => state.resetCompletionStatus);
   const refreshTodayEntries = useWisdomStore(state => state.refreshTodayEntries);
   const refreshTodayPrompt = useJournalStore(state => state.refreshTodayPrompt);
@@ -46,14 +22,7 @@ export default function SettingsScreen() {
   const toggleTheme = useThemeStore(state => state.toggleTheme);
   const colorScheme = theme === 'dark' ? colors.dark : colors.light;
   
-  const [notificationsEnabled, setNotificationsEnabled] = useState(
-    profile?.notifications || false
-  );
-  
-  const handleToggleNotifications = (value: boolean) => {
-    setNotificationsEnabled(value);
-    updateSettings({ notifications: value });
-  };
+  const updateSettings = useProfileStore(state => state.updateSettings);
   
   const handleToggleTheme = () => {
     toggleTheme();
@@ -87,40 +56,19 @@ export default function SettingsScreen() {
     Alert.alert("Success", "Today's journal prompt has been refreshed.");
   };
   
-  const handleLogout = () => {
-    Alert.alert(
-      "Log Out",
-      "Are you sure you want to log out? This will reset all your data.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        { 
-          text: "Log Out", 
-          onPress: () => {
-            resetProfile();
-            router.replace('/onboarding/profile');
-          },
-          style: "destructive"
-        }
-      ]
-    );
+  const navigateToJournalHistory = () => {
+    router.push('/journal/history');
   };
   
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colorScheme.background }]} edges={['top']}>
       <View style={[styles.header, { borderBottomColor: colorScheme.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color={colorScheme.text.primary} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colorScheme.text.primary }]}>Settings</Text>
-        <View style={styles.placeholder} />
+        <Text style={[styles.title, { color: colorScheme.text.primary }]}>Settings</Text>
       </View>
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colorScheme.text.secondary }]}>Preferences</Text>
+          <Text style={[styles.sectionTitle, { color: colorScheme.text.secondary }]}>Appearance</Text>
           
           <Card style={styles.settingCard}>
             <View style={styles.settingRow}>
@@ -144,29 +92,12 @@ export default function SettingsScreen() {
               />
             </View>
           </Card>
-          
-          <Card style={styles.settingCard}>
-            <View style={styles.settingRow}>
-              <View style={styles.settingInfo}>
-                <View style={[styles.iconContainer, { backgroundColor: colorScheme.cardBackgroundAlt }]}>
-                  <Bell size={20} color={colorScheme.text.primary} />
-                </View>
-                <Text style={[styles.settingLabel, { color: colorScheme.text.primary }]}>Notifications</Text>
-              </View>
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={handleToggleNotifications}
-                trackColor={{ false: colorScheme.inactive, true: colorScheme.primary }}
-                thumbColor={colorScheme.text.primary}
-              />
-            </View>
-          </Card>
         </View>
         
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colorScheme.text.secondary }]}>History</Text>
+          <Text style={[styles.sectionTitle, { color: colorScheme.text.secondary }]}>Content</Text>
           
-          <TouchableOpacity onPress={() => router.push('/journal/history')}>
+          <TouchableOpacity onPress={navigateToJournalHistory}>
             <Card style={styles.settingCard}>
               <View style={styles.settingRow}>
                 <View style={styles.settingInfo}>
@@ -233,22 +164,21 @@ export default function SettingsScreen() {
         </View>
         
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colorScheme.text.secondary }]}>Account</Text>
+          <Text style={[styles.sectionTitle, { color: colorScheme.text.secondary }]}>About</Text>
           
           <Card style={styles.settingCard}>
-            <TouchableOpacity onPress={handleLogout} style={styles.settingRow}>
-              <View style={styles.settingInfo}>
-                <View style={[styles.iconContainer, styles.logoutIcon, { backgroundColor: 'rgba(229, 115, 115, 0.1)' }]}>
-                  <LogOut size={20} color={colorScheme.error} />
+            <View style={styles.aboutContainer}>
+              <View style={styles.aboutHeader}>
+                <View style={[styles.iconContainer, { backgroundColor: colorScheme.cardBackgroundAlt }]}>
+                  <Info size={20} color={colorScheme.text.primary} />
                 </View>
-                <Text style={[styles.logoutText, { color: colorScheme.error }]}>Log Out</Text>
+                <Text style={[styles.aboutTitle, { color: colorScheme.text.primary }]}>Men of Honor - v1.0.0</Text>
               </View>
-            </TouchableOpacity>
+              <Text style={[styles.aboutDescription, { color: colorScheme.text.secondary }]}>
+                An app for men of faith and values to build daily disciplines, gain wisdom, and reflect through journaling.
+              </Text>
+            </View>
           </Card>
-        </View>
-        
-        <View style={styles.appInfo}>
-          <Text style={[styles.appVersion, { color: colorScheme.text.muted }]}>Men of Honor v1.0.0</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -260,26 +190,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    padding: 16,
     borderBottomWidth: 1,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
+  title: {
+    fontSize: 24,
     fontWeight: 'bold',
-  },
-  placeholder: {
-    width: 40,
   },
   scrollContent: {
     padding: 16,
@@ -320,18 +236,20 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 16,
   },
-  logoutIcon: {
-    backgroundColor: 'rgba(229, 115, 115, 0.1)',
+  aboutContainer: {
+    padding: 16,
   },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  appInfo: {
+  aboutHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 32,
+    marginBottom: 12,
   },
-  appVersion: {
-    fontSize: 12,
+  aboutTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  aboutDescription: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

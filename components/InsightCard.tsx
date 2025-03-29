@@ -13,7 +13,7 @@ interface InsightCardProps {
 
 export default function InsightCard({ insight, style }: InsightCardProps) {
   return (
-    <Card style={[styles.card, style]}>
+    <Card style={[styles.card, style]} variant="elevated">
       <View style={styles.header}>
         <View style={styles.iconContainer}>
           <Lightbulb size={22} color={colors.primary} />
@@ -34,7 +34,7 @@ export default function InsightCard({ insight, style }: InsightCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    padding: 20,
+    padding: 24,
     marginHorizontal: 16,
     marginVertical: 16,
   },

@@ -5,6 +5,7 @@ import Card from './Card';
 import Button from './Button';
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
+import { useThemeStore } from '@/store/theme-store';
 
 interface JournalPromptProps {
   prompt: string;
@@ -19,26 +20,36 @@ export default function JournalPrompt({
   onChangeText,
   onSave
 }: JournalPromptProps) {
+  const theme = useThemeStore(state => state.theme);
+  const colorScheme = theme === 'dark' ? colors.dark : colors.light;
+  
   return (
     <Card style={styles.card}>
       <View style={styles.header}>
-        <View style={styles.iconContainer}>
-          <BookText size={20} color={colors.text.primary} />
+        <View style={[styles.iconContainer, { backgroundColor: colorScheme.cardBackgroundAlt }]}>
+          <BookText size={20} color={colorScheme.text.primary} />
         </View>
-        <Text style={styles.title}>Today's Prompt</Text>
+        <Text style={[styles.title, { color: colorScheme.text.primary }]}>Today's Prompt</Text>
       </View>
       
-      <View style={styles.divider} />
+      <View style={[styles.divider, { backgroundColor: colorScheme.border }]} />
       
-      <Text style={styles.prompt}>
+      <Text style={[styles.prompt, { color: colorScheme.text.secondary }]}>
         {prompt}
       </Text>
       
       <TextInput
-        style={styles.input}
+        style={[
+          styles.input, 
+          { 
+            borderColor: colorScheme.border,
+            backgroundColor: colorScheme.cardBackgroundAlt,
+            color: colorScheme.text.primary
+          }
+        ]}
         multiline
         placeholder="Write your thoughts here..."
-        placeholderTextColor={colors.text.muted}
+        placeholderTextColor={colorScheme.text.muted}
         value={value}
         onChangeText={onChangeText}
         textAlignVertical="top"
@@ -67,34 +78,29 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.cardBackgroundAlt,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   title: {
-    ...typography.h3,
-    color: colors.text.primary,
+    fontSize: 20,
+    fontWeight: '600',
   },
   divider: {
     height: 1,
-    backgroundColor: colors.border,
     marginVertical: 16,
   },
   prompt: {
-    ...typography.subtitle,
-    color: colors.text.secondary,
+    fontSize: 18,
+    fontWeight: '600',
     marginBottom: 16,
     fontStyle: 'italic',
   },
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     minHeight: 150,
-    backgroundColor: colors.cardBackgroundAlt,
-    color: colors.text.primary,
     fontSize: 16,
     lineHeight: 24,
   },

@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react-native';
+import Card from '@/components/Card';
 import { useDisciplinesStore } from '@/store/disciplines-store';
+import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
+import { useThemeStore } from '@/store/theme-store';
 
 export default function GrowthHistoryScreen() {
+  const router = useRouter();
   const completionHistory = useDisciplinesStore(state => state.completionHistory);
+  const theme = useThemeStore(state => state.theme);
+  const colorScheme = theme === 'dark' ? colors.dark : colors.light;
   
   // State to track the current month offset (0 = current month, -1 = last month, etc.)
   const [monthOffset, setMonthOffset] = useState(0);
@@ -30,7 +36,7 @@ export default function GrowthHistoryScreen() {
     // Add empty spaces for days before the first day of the month
     for (let i = 0; i < firstDayOfWeek; i++) {
       days.push({
-        key: `empty-${i}-${monthOffset}`,
+        key: `empty-start-${i}-${monthOffset}`,
         isEmpty: true
       });
     }
@@ -83,56 +89,62 @@ export default function GrowthHistoryScreen() {
   
   const getStatusColor = (day: any) => {
     if (day.isEmpty) return 'transparent';
-    if (day.isToday) return day.completed ? '#28C76F' : colors.accent;
-    return day.completed ? '#28C76F' : colors.cardBackgroundAlt;
+    if (day.isToday) return day.completed ? colorScheme.readiness.high : colorScheme.accent;
+    return day.completed ? colorScheme.readiness.high : colorScheme.cardBackgroundAlt;
   };
   
   const getDayTextColor = (day: any) => {
     if (day.isEmpty) return 'transparent';
-    if (day.isToday) return colors.text.inverse;
-    return colors.text.primary;
+    if (day.isToday) return colorScheme.text.inverse;
+    return colorScheme.text.primary;
   };
   
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colorScheme.background }]} edges={['top']}>
+      <View style={[styles.header, { borderBottomColor: colorScheme.border }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <ArrowLeft size={24} color={colorScheme.text.primary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colorScheme.text.primary }]}>Growth History</Text>
+        <View style={styles.placeholder} />
+      </View>
+      
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Growth History</Text>
-        <Text style={styles.subtitle}>Track your daily discipline consistency</Text>
-        
-        <View style={styles.calendarContainer}>
+        <Card style={styles.calendarContainer} variant="elevated">
           <View style={styles.monthNavigation}>
             <TouchableOpacity 
               onPress={navigateToPreviousMonth}
-              style={styles.navButton}
+              style={[styles.navButton, { backgroundColor: colorScheme.cardBackgroundAlt }]}
             >
-              <ChevronLeft size={20} color={colors.text.primary} />
+              <ChevronLeft size={20} color={colorScheme.text.primary} />
             </TouchableOpacity>
             
-            <Text style={styles.monthName}>{monthName}</Text>
+            <Text style={[styles.monthName, { color: colorScheme.text.primary }]}>{monthName}</Text>
             
             <TouchableOpacity 
               onPress={navigateToNextMonth}
               style={[
                 styles.navButton,
+                { backgroundColor: colorScheme.cardBackgroundAlt },
                 monthOffset === 0 && styles.disabledNavButton
               ]}
               disabled={monthOffset === 0}
             >
               <ChevronRight 
                 size={20} 
-                color={monthOffset < 0 ? colors.text.primary : colors.text.muted} 
+                color={monthOffset < 0 ? colorScheme.text.primary : colorScheme.text.muted} 
               />
             </TouchableOpacity>
           </View>
           
           <View style={styles.weekdaysHeader}>
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
-              <Text key={day} style={styles.weekdayLabel}>{day}</Text>
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+              <Text key={`weekday-${index}`} style={[styles.weekdayLabel, { color: colorScheme.text.secondary }]}>{day}</Text>
             ))}
           </View>
           
           {weeks.map((week, weekIndex) => (
-            <View key={`week-${weekIndex}-${monthOffset}`} style={styles.weekRow}>
+            <View key={`week-${weekIndex}`} style={styles.weekRow}>
               {week.map((day) => (
                 <View 
                   key={day.key} 
@@ -146,7 +158,7 @@ export default function GrowthHistoryScreen() {
                       style={[
                         styles.dayCircle, 
                         { backgroundColor: getStatusColor(day) },
-                        day.isToday && styles.todayCircle
+                        day.isToday && [styles.todayCircle, { borderColor: colorScheme.primary }]
                       ]}
                     >
                       <Text style={[
@@ -161,20 +173,20 @@ export default function GrowthHistoryScreen() {
               ))}
             </View>
           ))}
-        </View>
+        </Card>
         
         <View style={styles.legendContainer}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#28C76F' }]} />
-            <Text style={styles.legendText}>Completed</Text>
+            <View style={[styles.legendDot, { backgroundColor: colorScheme.readiness.high }]} />
+            <Text style={[styles.legendText, { color: colorScheme.text.secondary }]}>Completed</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: colors.accent }]} />
-            <Text style={styles.legendText}>Today</Text>
+            <View style={[styles.legendDot, { backgroundColor: colorScheme.accent }]} />
+            <Text style={[styles.legendText, { color: colorScheme.text.secondary }]}>Today</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: colors.cardBackgroundAlt }]} />
-            <Text style={styles.legendText}>Incomplete</Text>
+            <View style={[styles.legendDot, { backgroundColor: colorScheme.cardBackgroundAlt }]} />
+            <Text style={[styles.legendText, { color: colorScheme.text.secondary }]}>Incomplete</Text>
           </View>
         </View>
       </ScrollView>
@@ -185,38 +197,47 @@ export default function GrowthHistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  placeholder: {
+    width: 40,
   },
   scrollContent: {
     padding: 16,
     paddingBottom: 32,
   },
-  title: {
-    ...typography.h2,
-    marginBottom: 8,
-  },
-  subtitle: {
-    ...typography.bodySmall,
-    color: colors.text.secondary,
-    marginBottom: 24,
-  },
   calendarContainer: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
+    padding: 20,
     marginBottom: 24,
   },
   monthNavigation: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   navButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.cardBackgroundAlt,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -224,31 +245,30 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   monthName: {
-    ...typography.subtitle,
-    color: colors.text.primary,
+    fontSize: 18,
+    fontWeight: '600',
   },
   weekdaysHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 16,
   },
   weekdayLabel: {
-    width: 40,
+    width: 36,
     textAlign: 'center',
-    ...typography.caption,
-    color: colors.text.secondary,
+    fontSize: 14,
     fontWeight: '600',
   },
   weekRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   dayContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
   },
   emptyDay: {
     opacity: 0,
@@ -262,7 +282,6 @@ const styles = StyleSheet.create({
   },
   todayCircle: {
     borderWidth: 2,
-    borderColor: colors.primary,
   },
   dayNumber: {
     fontSize: 14,
@@ -284,7 +303,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   legendText: {
-    ...typography.caption,
-    color: colors.text.secondary,
+    fontSize: 12,
   },
 });

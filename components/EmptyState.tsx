@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import Button from './Button';
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
+import { useThemeStore } from '@/store/theme-store';
 
 interface EmptyStateProps {
   icon: React.ReactNode;
@@ -19,11 +20,16 @@ export default function EmptyState({
   buttonTitle,
   onButtonPress,
 }: EmptyStateProps) {
+  const theme = useThemeStore(state => state.theme);
+  const colorScheme = theme === 'dark' ? colors.dark : colors.light;
+  
   return (
     <View style={styles.container}>
-      <View style={styles.iconContainer}>{icon}</View>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.description}>{description}</Text>
+      <View style={[styles.iconContainer, { backgroundColor: colorScheme.cardBackgroundAlt }]}>
+        {icon}
+      </View>
+      <Text style={[styles.title, { color: colorScheme.text.primary }]}>{title}</Text>
+      <Text style={[styles.description, { color: colorScheme.text.secondary }]}>{description}</Text>
       {buttonTitle && onButtonPress && (
         <Button
           title={buttonTitle}
@@ -46,20 +52,18 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.cardBackgroundAlt,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
   },
   title: {
-    ...typography.h2,
-    color: colors.text.primary,
+    fontSize: 24,
+    fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 8,
   },
   description: {
-    ...typography.body,
-    color: colors.text.secondary,
+    fontSize: 16,
     textAlign: 'center',
     marginBottom: 24,
   },

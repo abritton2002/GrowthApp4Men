@@ -8,12 +8,15 @@ import JournalPrompt from '@/components/JournalPrompt';
 import { useJournalStore } from '@/store/journal-store';
 import { formatDate, getTodayDateString } from '@/utils/date-utils';
 import colors from '@/constants/colors';
+import { useThemeStore } from '@/store/theme-store';
 
 export default function JournalScreen() {
   const router = useRouter();
   const currentPrompt = useJournalStore(state => state.currentPrompt);
   const getEntryForDate = useJournalStore(state => state.getEntryForDate);
   const addEntry = useJournalStore(state => state.addEntry);
+  const theme = useThemeStore(state => state.theme);
+  const colorScheme = theme === 'dark' ? colors.dark : colors.light;
   
   const [journalContent, setJournalContent] = useState('');
   const today = getTodayDateString();
@@ -39,7 +42,7 @@ export default function JournalScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colorScheme.background }]} edges={['top']}>
       <HeaderBar 
         title="Daily Journal" 
         date={formatDate(new Date())} 
@@ -55,10 +58,10 @@ export default function JournalScreen() {
       )}
       
       <TouchableOpacity 
-        style={styles.historyButton}
+        style={[styles.historyButton, { backgroundColor: colorScheme.secondary }]}
         onPress={navigateToHistory}
       >
-        <History size={24} color={colors.text.inverse} />
+        <History size={24} color={colorScheme.text.inverse} />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -67,7 +70,6 @@ export default function JournalScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   historyButton: {
     position: 'absolute',
@@ -76,10 +78,9 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.secondary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: colors.shadow,
+    shadowColor: 'rgba(0, 0, 0, 0.3)',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,

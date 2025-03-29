@@ -5,20 +5,24 @@ import Card from './Card';
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
 import { WisdomEntry } from '@/types/wisdom';
+import { useThemeStore } from '@/store/theme-store';
 
 interface WisdomCardProps {
   entry: WisdomEntry;
 }
 
 export default function WisdomCard({ entry }: WisdomCardProps) {
+  const theme = useThemeStore(state => state.theme);
+  const colorScheme = theme === 'dark' ? colors.dark : colors.light;
+  
   const getIcon = () => {
     switch (entry.type) {
       case 'quote':
-        return <Quote size={20} color={colors.text.primary} />;
+        return <Quote size={20} color={colorScheme.text.primary} />;
       case 'financial':
-        return <DollarSign size={20} color={colors.text.primary} />;
+        return <DollarSign size={20} color={colorScheme.text.primary} />;
       case 'parable':
-        return <BookOpen size={20} color={colors.text.primary} />;
+        return <BookOpen size={20} color={colorScheme.text.primary} />;
       default:
         return null;
     }
@@ -40,19 +44,19 @@ export default function WisdomCard({ entry }: WisdomCardProps) {
   return (
     <Card style={styles.card}>
       <View style={styles.header}>
-        <View style={styles.iconContainer}>
+        <View style={[styles.iconContainer, { backgroundColor: colorScheme.cardBackgroundAlt }]}>
           {getIcon()}
         </View>
-        <Text style={styles.title}>{getTitle()}</Text>
+        <Text style={[styles.title, { color: colorScheme.text.primary }]}>{getTitle()}</Text>
       </View>
       
-      <View style={styles.divider} />
+      <View style={[styles.divider, { backgroundColor: colorScheme.border }]} />
       
       <View style={styles.content}>
-        <Text style={styles.contentText}>{entry.content}</Text>
+        <Text style={[styles.contentText, { color: colorScheme.text.primary }]}>{entry.content}</Text>
         
         {entry.source && (
-          <Text style={styles.source}>
+          <Text style={[styles.source, { color: colorScheme.text.secondary }]}>
             — {entry.source}
           </Text>
         )}
@@ -75,31 +79,27 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.cardBackgroundAlt,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   title: {
-    ...typography.h3,
-    color: colors.text.primary,
+    fontSize: 20,
+    fontWeight: '600',
   },
   divider: {
     height: 1,
-    backgroundColor: colors.border,
     marginVertical: 16,
   },
   content: {
     marginTop: 4,
   },
   contentText: {
-    ...typography.body,
-    color: colors.text.primary,
+    fontSize: 16,
     lineHeight: 24,
   },
   source: {
-    ...typography.caption,
-    color: colors.text.secondary,
+    fontSize: 12,
     marginTop: 16,
     textAlign: 'right',
     fontStyle: 'italic',
