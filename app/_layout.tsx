@@ -158,6 +158,13 @@ function RootLayoutNav() {
           headerShown: false,
         }} 
       />
+      <Stack.Screen 
+        name="subscription" 
+        options={{ 
+          title: "Premium Subscription",
+          headerShown: false,
+        }} 
+      />
     </Stack>
   );
 }

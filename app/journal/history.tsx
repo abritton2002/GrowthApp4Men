@@ -2,11 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Calendar, ChevronRight, ArrowLeft, BookText } from 'lucide-react-native';
+import { Calendar, ChevronRight, ArrowLeft, BookText, Lock } from 'lucide-react-native';
 import { useJournalStore } from '@/store/journal-store';
 import { useThemeStore } from '@/store/theme-store';
+import { useSubscriptionStore } from '@/store/subscription-store';
+import { PREMIUM_FEATURES } from '@/store/subscription-store';
 import EmptyState from '@/components/EmptyState';
 import Card from '@/components/Card';
+import PremiumFeatureOverlay from '@/components/PremiumFeatureOverlay';
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
 
@@ -16,8 +19,10 @@ export default function JournalHistoryScreen() {
   const prompts = useJournalStore(state => state.prompts);
   const theme = useThemeStore(state => state.theme);
   const colorScheme = theme === 'dark' ? colors.dark : colors.light;
+  const isPremiumFeatureAvailable = useSubscriptionStore(state => state.isPremiumFeatureAvailable);
   
   const entries = getAllEntries();
+  const hasJournalHistoryAccess = isPremiumFeatureAvailable(PREMIUM_FEATURES.JOURNAL_HISTORY);
   
   const getPromptText = (promptId: string) => {
     const prompt = prompts.find(p => p.id === promptId);
@@ -34,6 +39,11 @@ export default function JournalHistoryScreen() {
   };
   
   const navigateToEntry = (entryId: string) => {
+    if (!hasJournalHistoryAccess) {
+      router.push('/subscription');
+      return;
+    }
+    
     router.push({
       pathname: '/journal/entry',
       params: { id: entryId }
@@ -51,7 +61,14 @@ export default function JournalHistoryScreen() {
             <Calendar size={16} color={colorScheme.text.secondary} style={styles.calendarIcon} />
             <Text style={[styles.dateText, { color: colorScheme.text.primary }]}>{formatDate(item.date)}</Text>
           </View>
-          <ChevronRight size={20} color={colorScheme.text.muted} />
+          
+          {!hasJournalHistoryAccess && (
+            <Lock size={16} color={colorScheme.accent} />
+          )}
+          
+          {hasJournalHistoryAccess && (
+            <ChevronRight size={20} color={colorScheme.text.muted} />
+          )}
         </View>
         
         <Text style={[styles.promptText, { color: colorScheme.text.secondary }]} numberOfLines={2}>
@@ -90,6 +107,12 @@ export default function JournalHistoryScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmptyState}
       />
+      
+      {!hasJournalHistoryAccess && entries.length > 0 && (
+        <PremiumFeatureOverlay 
+          message="Upgrade to Premium to access your complete journal history and track your growth journey over time."
+        />
+      )}
     </SafeAreaView>
   );
 }

@@ -1,137 +1,95 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  Image,
-  Platform
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { 
-  Calendar, 
-  BookText, 
-  Settings, 
-  TrendingUp, 
-  ChevronRight,
-  Edit3,
-  BookOpen
-} from 'lucide-react-native';
+import { Settings, ChevronRight, BookOpen, Calendar, BarChart2 } from 'lucide-react-native';
 import Card from '@/components/Card';
 import { useProfileStore } from '@/store/profile-store';
 import { useDisciplinesStore } from '@/store/disciplines-store';
 import { useJournalStore } from '@/store/journal-store';
 import { useLearnStore } from '@/store/learn-store';
 import colors from '@/constants/colors';
-import typography from '@/constants/typography';
 import { useThemeStore } from '@/store/theme-store';
+import { useSubscriptionStore } from '@/store/subscription-store';
+import PremiumBadge from '@/components/PremiumBadge';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const profile = useProfileStore(state => state.profile);
-  const completionHistory = useDisciplinesStore(state => state.completionHistory);
-  const journalEntries = useJournalStore(state => state.getAllEntries());
+  const { name, avatar, goal } = useProfileStore();
+  const { disciplines } = useDisciplinesStore();
+  const { entries } = useJournalStore();
   const { getLearningStats } = useLearnStore();
   const theme = useThemeStore(state => state.theme);
   const colorScheme = theme === 'dark' ? colors.dark : colors.light;
+  const { subscription } = useSubscriptionStore();
   
   // Calculate stats
-  const totalDays = completionHistory ? Object.keys(completionHistory).length : 0;
-  const journalCount = journalEntries.length;
-  
-  // Get learning stats
-  const { totalCompleted } = getLearningStats();
-  
-  // Calculate streak
-  const streakCount = calculateStreak(completionHistory);
+  const activeDisciplines = disciplines.filter(d => d.isActive).length;
+  const journalEntries = Object.keys(entries).length;
+  const { totalCompleted: learningCompleted } = getLearningStats();
   
   const navigateToSettings = () => {
     router.push('/settings');
   };
   
-  const navigateToGrowthHistory = () => {
-    router.push('/growth/history');
-  };
-  
-  const navigateToJournalHistory = () => {
-    router.push('/journal/history');
-  };
-  
-  const navigateToLearningHistory = () => {
-    router.push('/learning/history');
-  };
-  
-  const navigateToEditProfile = () => {
-    // This would go to a profile edit screen
-    // For now, we'll just go to settings
-    router.push('/settings');
-  };
-  
-  if (!profile) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colorScheme.background }]}>
-        <Text style={[typography.body, { color: colorScheme.text.primary }]}>Loading profile...</Text>
-      </SafeAreaView>
-    );
-  }
-  
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colorScheme.background }]} edges={['top']}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.header, { borderBottomColor: colorScheme.border }]}>
-          <View style={styles.profileInfo}>
-            <View style={styles.avatarContainer}>
-              {profile.avatar ? (
-                <Image source={{ uri: profile.avatar }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatarPlaceholder, { backgroundColor: colorScheme.primary }]}>
-                  <Text style={[styles.avatarInitial, { color: colorScheme.text.inverse }]}>
-                    {profile.name.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )}
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: colorScheme.text.primary }]}>Profile</Text>
+        <TouchableOpacity onPress={navigateToSettings} style={styles.settingsButton}>
+          <Settings size={24} color={colorScheme.text.primary} />
+        </TouchableOpacity>
+      </View>
+      
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.profileSection}>
+          <View style={styles.profileHeader}>
+            <Image 
+              source={{ uri: avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1760&q=80' }} 
+              style={styles.avatar} 
+            />
+            <View style={styles.profileInfo}>
+              <Text style={[styles.profileName, { color: colorScheme.text.primary }]}>{name}</Text>
+              {subscription.tier === 'premium' && <PremiumBadge style={styles.premiumBadge} />}
+              <Text style={[styles.profileGoal, { color: colorScheme.text.secondary }]}>
+                {goal || "Set your growth goal in settings"}
+              </Text>
             </View>
-            
-            <View style={styles.nameContainer}>
-              <Text style={[styles.name, { color: colorScheme.text.primary }]}>{profile.name}</Text>
-              {profile.bio && <Text style={[styles.bio, { color: colorScheme.text.secondary }]}>{profile.bio}</Text>}
-            </View>
-            
-            <TouchableOpacity 
-              style={[styles.editButton, { backgroundColor: colorScheme.cardBackgroundAlt }]}
-              onPress={navigateToEditProfile}
-            >
-              <Edit3 size={20} color={colorScheme.text.primary} />
-            </TouchableOpacity>
           </View>
         </View>
         
-        <View style={styles.statsContainer}>
-          <View style={[styles.statCard, { backgroundColor: colorScheme.cardBackground }]}>
-            <Text style={[styles.statValue, { color: colorScheme.text.primary }]}>{totalDays}</Text>
-            <Text style={[styles.statLabel, { color: colorScheme.text.secondary }]}>Days</Text>
-          </View>
-          
-          <View style={[styles.statCard, { backgroundColor: colorScheme.cardBackground }]}>
-            <Text style={[styles.statValue, { color: colorScheme.text.primary }]}>{streakCount}</Text>
-            <Text style={[styles.statLabel, { color: colorScheme.text.secondary }]}>Streak</Text>
-          </View>
-          
-          <View style={[styles.statCard, { backgroundColor: colorScheme.cardBackground }]}>
-            <Text style={[styles.statValue, { color: colorScheme.text.primary }]}>{totalCompleted}</Text>
-            <Text style={[styles.statLabel, { color: colorScheme.text.secondary }]}>Learned</Text>
-          </View>
+        <View style={styles.statsSection}>
+          <Card style={styles.statsCard}>
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={[styles.statValue, { color: colorScheme.text.primary }]}>{activeDisciplines}</Text>
+                <Text style={[styles.statLabel, { color: colorScheme.text.secondary }]}>Active Disciplines</Text>
+              </View>
+              
+              <View style={[styles.divider, { backgroundColor: colorScheme.border }]} />
+              
+              <View style={styles.statItem}>
+                <Text style={[styles.statValue, { color: colorScheme.text.primary }]}>{journalEntries}</Text>
+                <Text style={[styles.statLabel, { color: colorScheme.text.secondary }]}>Journal Entries</Text>
+              </View>
+              
+              <View style={[styles.divider, { backgroundColor: colorScheme.border }]} />
+              
+              <View style={styles.statItem}>
+                <Text style={[styles.statValue, { color: colorScheme.text.primary }]}>{learningCompleted}</Text>
+                <Text style={[styles.statLabel, { color: colorScheme.text.secondary }]}>Lessons Completed</Text>
+              </View>
+            </View>
+          </Card>
         </View>
         
-        <Text style={[styles.sectionTitle, { color: colorScheme.text.secondary }]}>History</Text>
+        <Text style={[styles.sectionTitle, { color: colorScheme.text.primary }]}>History & Analytics</Text>
         
-        <TouchableOpacity onPress={navigateToGrowthHistory}>
+        <TouchableOpacity onPress={() => router.push('/growth/history')}>
           <Card style={styles.menuCard}>
             <View style={styles.menuItem}>
-              <View style={[styles.menuIconContainer, { backgroundColor: colorScheme.cardBackgroundAlt }]}>
-                <Calendar size={20} color={colorScheme.text.primary} />
+              <View style={styles.menuIconContainer}>
+                <BarChart2 size={20} color={colorScheme.primary} />
               </View>
               <Text style={[styles.menuText, { color: colorScheme.text.primary }]}>Growth History</Text>
               <ChevronRight size={20} color={colorScheme.text.muted} />
@@ -139,11 +97,11 @@ export default function ProfileScreen() {
           </Card>
         </TouchableOpacity>
         
-        <TouchableOpacity onPress={navigateToJournalHistory}>
+        <TouchableOpacity onPress={() => router.push('/journal/history')}>
           <Card style={styles.menuCard}>
             <View style={styles.menuItem}>
-              <View style={[styles.menuIconContainer, { backgroundColor: colorScheme.cardBackgroundAlt }]}>
-                <BookText size={20} color={colorScheme.text.primary} />
+              <View style={styles.menuIconContainer}>
+                <Calendar size={20} color={colorScheme.primary} />
               </View>
               <Text style={[styles.menuText, { color: colorScheme.text.primary }]}>Journal History</Text>
               <ChevronRight size={20} color={colorScheme.text.muted} />
@@ -151,11 +109,11 @@ export default function ProfileScreen() {
           </Card>
         </TouchableOpacity>
         
-        <TouchableOpacity onPress={navigateToLearningHistory}>
+        <TouchableOpacity onPress={() => router.push('/learning/history')}>
           <Card style={styles.menuCard}>
             <View style={styles.menuItem}>
-              <View style={[styles.menuIconContainer, { backgroundColor: colorScheme.cardBackgroundAlt }]}>
-                <BookOpen size={20} color={colorScheme.text.primary} />
+              <View style={styles.menuIconContainer}>
+                <BookOpen size={20} color={colorScheme.primary} />
               </View>
               <Text style={[styles.menuText, { color: colorScheme.text.primary }]}>Learning History</Text>
               <ChevronRight size={20} color={colorScheme.text.muted} />
@@ -163,125 +121,94 @@ export default function ProfileScreen() {
           </Card>
         </TouchableOpacity>
         
-        <Text style={[styles.sectionTitle, { color: colorScheme.text.secondary }]}>Settings</Text>
-        
-        <TouchableOpacity onPress={navigateToSettings}>
-          <Card style={styles.menuCard}>
-            <View style={styles.menuItem}>
-              <View style={[styles.menuIconContainer, { backgroundColor: colorScheme.cardBackgroundAlt }]}>
-                <Settings size={20} color={colorScheme.text.primary} />
-              </View>
-              <Text style={[styles.menuText, { color: colorScheme.text.primary }]}>App Settings</Text>
-              <ChevronRight size={20} color={colorScheme.text.muted} />
+        <TouchableOpacity onPress={() => router.push('/subscription')}>
+          <Card style={[styles.subscriptionCard, { backgroundColor: colorScheme.primary }]}>
+            <View style={styles.subscriptionContent}>
+              <Text style={styles.subscriptionTitle}>
+                {subscription.tier === 'premium' ? 'Manage Premium' : 'Upgrade to Premium'}
+              </Text>
+              <Text style={styles.subscriptionDescription}>
+                {subscription.tier === 'premium' 
+                  ? 'Access all your premium features' 
+                  : 'Unlock full history, analytics, and more'}
+              </Text>
             </View>
+            <ChevronRight size={20} color="#FFFFFF" />
           </Card>
         </TouchableOpacity>
-        
-        <View style={styles.appInfo}>
-          <Text style={[styles.appVersion, { color: colorScheme.text.muted }]}>Men of Honor v1.0.0</Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-// Helper function to calculate streak
-function calculateStreak(completionHistory: Record<string, boolean> = {}): number {
-  if (!completionHistory || Object.keys(completionHistory).length === 0) return 0;
-  
-  const dates = Object.keys(completionHistory)
-    .filter(date => completionHistory[date])
-    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-  
-  if (dates.length === 0) return 0;
-  
-  let streak = 1;
-  const oneDay = 24 * 60 * 60 * 1000; // milliseconds in a day
-  
-  for (let i = 0; i < dates.length - 1; i++) {
-    const current = new Date(dates[i]);
-    const next = new Date(dates[i + 1]);
-    
-    // Check if dates are consecutive
-    const diffDays = Math.round(Math.abs((current.getTime() - next.getTime()) / oneDay));
-    
-    if (diffDays === 1) {
-      streak++;
-    } else {
-      break;
-    }
-  }
-  
-  return streak;
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 40,
-  },
   header: {
-    padding: 24,
-    borderBottomWidth: 1,
-  },
-  profileInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  avatarContainer: {
-    marginRight: 16,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarInitial: {
-    fontSize: 36,
-    fontWeight: 'bold',
-  },
-  nameContainer: {
-    flex: 1,
-  },
-  name: {
+  headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 4,
   },
-  bio: {
-    fontSize: 14,
-  },
-  editButton: {
+  settingsButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  statsContainer: {
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  profileSection: {
+    marginBottom: 24,
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginRight: 16,
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  premiumBadge: {
+    marginBottom: 8,
+  },
+  profileGoal: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  statsSection: {
+    marginBottom: 24,
+  },
+  statsCard: {
+    padding: 16,
+  },
+  statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 16,
-    paddingBottom: 24,
-  },
-  statCard: {
-    flex: 1,
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginHorizontal: 4,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
   },
   statValue: {
     fontSize: 24,
@@ -290,19 +217,21 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
+    textAlign: 'center',
+  },
+  divider: {
+    width: 1,
+    height: 40,
+    marginHorizontal: 8,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    paddingHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   menuCard: {
-    marginHorizontal: 16,
-    marginBottom: 8,
     padding: 0,
-    overflow: 'hidden',
+    marginBottom: 8,
   },
   menuItem: {
     flexDirection: 'row',
@@ -310,23 +239,30 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   menuIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginRight: 16,
   },
   menuText: {
     fontSize: 16,
     flex: 1,
   },
-  appInfo: {
+  subscriptionCard: {
+    marginTop: 16,
+    padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 32,
-    marginBottom: Platform.OS === 'ios' ? 16 : 0,
   },
-  appVersion: {
-    fontSize: 12,
+  subscriptionContent: {
+    flex: 1,
+  },
+  subscriptionTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  subscriptionDescription: {
+    color: '#FFFFFF',
+    opacity: 0.9,
+    fontSize: 14,
   },
 });

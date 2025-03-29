@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Card from './Card';
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
+import { useThemeStore } from '@/store/theme-store';
 
 interface LearnCardProps {
   category: string;
@@ -20,6 +21,8 @@ export default function LearnCard({
   color 
 }: LearnCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const theme = useThemeStore(state => state.theme);
+  const colorScheme = theme === 'dark' ? colors.dark : colors.light;
   
   const toggleExpand = () => {
     setExpanded(!expanded);
@@ -31,14 +34,15 @@ export default function LearnCard({
         <View style={[styles.iconContainer, { backgroundColor: color }]}>
           {icon}
         </View>
-        <Text style={styles.category}>{category}</Text>
+        <Text style={[styles.category, { color: colorScheme.text.secondary }]}>{category}</Text>
       </View>
       
-      <Text style={styles.title}>{title}</Text>
+      <Text style={[styles.title, { color: colorScheme.text.primary }]}>{title}</Text>
       
       <Text 
         style={[
           styles.content, 
+          { color: colorScheme.text.secondary },
           !expanded && styles.contentCollapsed
         ]}
         numberOfLines={expanded ? undefined : 2}
@@ -50,7 +54,7 @@ export default function LearnCard({
         style={styles.readMoreButton}
         onPress={toggleExpand}
       >
-        <Text style={styles.readMoreText}>
+        <Text style={[styles.readMoreText, { color: colorScheme.primary }]}>
           {expanded ? 'Show Less' : 'Read More'}
         </Text>
       </TouchableOpacity>
@@ -61,7 +65,6 @@ export default function LearnCard({
 const styles = StyleSheet.create({
   card: {
     padding: 20,
-    marginHorizontal: 16,
     marginVertical: 8,
   },
   header: {
@@ -78,17 +81,16 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   category: {
-    ...typography.subtitle,
     fontSize: 16,
-    color: colors.text.secondary,
+    fontWeight: '500',
   },
   title: {
-    ...typography.h3,
+    fontSize: 18,
+    fontWeight: 'bold',
     marginBottom: 8,
   },
   content: {
-    ...typography.body,
-    color: colors.text.secondary,
+    fontSize: 15,
     lineHeight: 22,
   },
   contentCollapsed: {
@@ -99,7 +101,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   readMoreText: {
-    color: colors.primary,
     fontWeight: '600',
   },
 });

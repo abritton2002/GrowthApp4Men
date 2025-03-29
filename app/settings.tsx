@@ -20,15 +20,18 @@ import {
   BookText,
   Calendar,
   ChevronRight,
-  Info
+  Info,
+  Crown
 } from 'lucide-react-native';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
+import PremiumBadge from '@/components/PremiumBadge';
 import { useProfileStore } from '@/store/profile-store';
 import { useDisciplinesStore } from '@/store/disciplines-store';
 import { useWisdomStore } from '@/store/wisdom-store';
 import { useJournalStore } from '@/store/journal-store';
 import { useThemeStore } from '@/store/theme-store';
+import { useSubscriptionStore } from '@/store/subscription-store';
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
 
@@ -46,9 +49,14 @@ export default function SettingsScreen() {
   const toggleTheme = useThemeStore(state => state.toggleTheme);
   const colorScheme = theme === 'dark' ? colors.dark : colors.light;
   
+  const subscription = useSubscriptionStore(state => state.subscription);
+  const deactivateSubscription = useSubscriptionStore(state => state.deactivateSubscription);
+  
   const [notificationsEnabled, setNotificationsEnabled] = useState(
     profile?.notifications || false
   );
+  
+  const isPremium = subscription.tier === 'premium' && subscription.isActive;
   
   const handleToggleNotifications = (value: boolean) => {
     setNotificationsEnabled(value);
@@ -87,6 +95,31 @@ export default function SettingsScreen() {
     Alert.alert("Success", "Today's journal prompt has been refreshed.");
   };
   
+  const handleManageSubscription = () => {
+    router.push('/subscription');
+  };
+  
+  const handleCancelSubscription = () => {
+    Alert.alert(
+      "Cancel Subscription",
+      "Are you sure you want to cancel your premium subscription? You'll lose access to premium features.",
+      [
+        {
+          text: "Keep Subscription",
+          style: "cancel"
+        },
+        { 
+          text: "Cancel Subscription", 
+          onPress: () => {
+            deactivateSubscription();
+            Alert.alert("Subscription Cancelled", "Your premium subscription has been cancelled.");
+          },
+          style: "destructive"
+        }
+      ]
+    );
+  };
+  
   const handleLogout = () => {
     Alert.alert(
       "Log Out",
@@ -119,6 +152,31 @@ export default function SettingsScreen() {
       </View>
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {isPremium && (
+          <View style={styles.premiumStatusSection}>
+            <View style={[styles.premiumStatusCard, { backgroundColor: colorScheme.accent }]}>
+              <View style={styles.premiumStatusContent}>
+                <View style={styles.premiumIconContainer}>
+                  <Crown size={24} color="#FFFFFF" />
+                </View>
+                <View style={styles.premiumTextContainer}>
+                  <Text style={styles.premiumStatusTitle}>Premium Active</Text>
+                  <Text style={styles.premiumStatusDescription}>
+                    {subscription.plan === 'yearly' ? 'Annual' : 'Monthly'} plan · Expires {new Date(subscription.expiryDate || '').toLocaleDateString()}
+                  </Text>
+                </View>
+              </View>
+              
+              <TouchableOpacity 
+                style={styles.manageSubscriptionButton}
+                onPress={handleManageSubscription}
+              >
+                <Text style={styles.manageSubscriptionText}>Manage</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colorScheme.text.secondary }]}>Preferences</Text>
           
@@ -232,6 +290,43 @@ export default function SettingsScreen() {
           </Card>
         </View>
         
+        {!isPremium && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colorScheme.text.secondary }]}>Premium</Text>
+            
+            <TouchableOpacity onPress={handleManageSubscription}>
+              <Card style={styles.settingCard}>
+                <View style={styles.settingRow}>
+                  <View style={styles.settingInfo}>
+                    <View style={[styles.iconContainer, { backgroundColor: colorScheme.accent + '33' }]}>
+                      <Crown size={20} color={colorScheme.accent} />
+                    </View>
+                    <Text style={[styles.settingLabel, { color: colorScheme.text.primary }]}>Upgrade to Premium</Text>
+                  </View>
+                  <ChevronRight size={20} color={colorScheme.text.muted} />
+                </View>
+              </Card>
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        {isPremium && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colorScheme.text.secondary }]}>Subscription</Text>
+            
+            <Card style={styles.settingCard}>
+              <TouchableOpacity onPress={handleCancelSubscription} style={styles.settingRow}>
+                <View style={styles.settingInfo}>
+                  <View style={[styles.iconContainer, styles.logoutIcon, { backgroundColor: 'rgba(229, 115, 115, 0.1)' }]}>
+                    <Crown size={20} color={colorScheme.error} />
+                  </View>
+                  <Text style={[styles.logoutText, { color: colorScheme.error }]}>Cancel Subscription</Text>
+                </View>
+              </TouchableOpacity>
+            </Card>
+          </View>
+        )}
+        
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colorScheme.text.secondary }]}>Account</Text>
           
@@ -284,6 +379,52 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 32,
+  },
+  premiumStatusSection: {
+    marginBottom: 24,
+  },
+  premiumStatusCard: {
+    borderRadius: 12,
+    padding: 16,
+  },
+  premiumStatusContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  premiumIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  premiumTextContainer: {
+    flex: 1,
+  },
+  premiumStatusTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  premiumStatusDescription: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  manageSubscriptionButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    alignSelf: 'flex-start',
+  },
+  manageSubscriptionText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
   },
   section: {
     marginBottom: 24,

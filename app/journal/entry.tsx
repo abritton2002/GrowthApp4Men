@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Calendar, ArrowLeft, Check } from 'lucide-react-native';
+import { Calendar, ArrowLeft, Check, Lock } from 'lucide-react-native';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
+import PremiumFeatureOverlay from '@/components/PremiumFeatureOverlay';
 import { useJournalStore } from '@/store/journal-store';
 import { useThemeStore } from '@/store/theme-store';
+import { useSubscriptionStore } from '@/store/subscription-store';
+import { PREMIUM_FEATURES } from '@/store/subscription-store';
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
 import { getTodayDateString } from '@/utils/date-utils';
@@ -25,12 +28,17 @@ export default function JournalEntryScreen() {
   const theme = useThemeStore(state => state.theme);
   const colorScheme = theme === 'dark' ? colors.dark : colors.light;
   
+  const isPremiumFeatureAvailable = useSubscriptionStore(state => state.isPremiumFeatureAvailable);
+  const hasJournalHistoryAccess = isPremiumFeatureAvailable(PREMIUM_FEATURES.JOURNAL_HISTORY);
+  
   const [journalContent, setJournalContent] = useState('');
   const today = getTodayDateString();
   
   // If id is provided, we're viewing an existing entry
   // Otherwise, we're creating a new entry for today
   const isViewingExistingEntry = !!id;
+  const isHistoricalEntry = isViewingExistingEntry && entries.find(e => e.id === id)?.date !== today;
+  const canEditEntry = !isHistoricalEntry || hasJournalHistoryAccess;
   
   useEffect(() => {
     if (isViewingExistingEntry) {
@@ -101,6 +109,10 @@ export default function JournalEntryScreen() {
         <View style={styles.dateContainer}>
           <Calendar size={20} color={colorScheme.text.secondary} style={styles.calendarIcon} />
           <Text style={[styles.dateText, { color: colorScheme.text.secondary }]}>{getEntryDate()}</Text>
+          
+          {isHistoricalEntry && !hasJournalHistoryAccess && (
+            <Lock size={16} color={colorScheme.accent} style={styles.lockIcon} />
+          )}
         </View>
         
         <Card style={styles.promptCard}>
@@ -123,7 +135,7 @@ export default function JournalEntryScreen() {
             placeholderTextColor={colorScheme.text.muted}
             value={journalContent}
             onChangeText={setJournalContent}
-            editable={!isViewingExistingEntry}
+            editable={canEditEntry}
             textAlignVertical="top"
           />
         </Card>
@@ -137,6 +149,12 @@ export default function JournalEntryScreen() {
           />
         )}
       </ScrollView>
+      
+      {isHistoricalEntry && !hasJournalHistoryAccess && (
+        <PremiumFeatureOverlay 
+          message="Upgrade to Premium to access and edit your complete journal history."
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -178,6 +196,9 @@ const styles = StyleSheet.create({
   },
   calendarIcon: {
     marginRight: 8,
+  },
+  lockIcon: {
+    marginLeft: 8,
   },
   dateText: {
     fontSize: 18,

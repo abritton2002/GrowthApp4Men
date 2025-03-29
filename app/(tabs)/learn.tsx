@@ -1,145 +1,66 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Check, ChevronRight, ChevronDown } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { BookOpen, ChevronRight, Calendar } from 'lucide-react-native';
 import HeaderBar from '@/components/HeaderBar';
 import Card from '@/components/Card';
-import Button from '@/components/Button';
-import LearningStreakCard from '@/components/LearningStreakCard';
+import LearnCard from '@/components/LearnCard';
 import { useLearnStore } from '@/store/learn-store';
-import { useDisciplinesStore } from '@/store/disciplines-store';
-import { formatDate, getTodayDateString } from '@/utils/date-utils';
 import colors from '@/constants/colors';
-import typography from '@/constants/typography';
 import { useThemeStore } from '@/store/theme-store';
+import { useSubscriptionStore } from '@/store/subscription-store';
+import { PREMIUM_FEATURES } from '@/store/subscription-store';
 
 export default function LearnScreen() {
-  const { 
-    categories, 
-    learningItems, 
-    selectedItemId, 
-    selectLearningItem,
-    completeLearningItem,
-    isItemCompleted,
-    getLearningStats
-  } = useLearnStore();
-  
+  const router = useRouter();
+  const { learningItems, categories, getLearningStats } = useLearnStore();
   const theme = useThemeStore(state => state.theme);
   const colorScheme = theme === 'dark' ? colors.dark : colors.light;
-  
-  const addDiscipline = useDisciplinesStore(state => state.addDiscipline);
-  
-  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const { isPremiumFeatureAvailable } = useSubscriptionStore();
   
   // Get learning stats
   const { currentStreak, weeklyProgress } = getLearningStats();
   
-  const handleSelectItem = (itemId: string) => {
-    if (selectedItemId) {
-      // If an item is already selected, don't allow selecting another
-      return;
-    }
+  // Get a random item from each category
+  const featuredItems = categories.map(category => {
+    const categoryItems = learningItems.filter(item => item.category === category);
+    const randomIndex = Math.floor(Math.random() * categoryItems.length);
+    return categoryItems[randomIndex];
+  });
+  
+  const getCategoryColor = (category) => {
+    const categoryColors = {
+      'Leadership': colorScheme.primary,
+      'Productivity': colorScheme.secondary,
+      'Finance': '#4CAF50',
+      'Mental Models': '#FF9800',
+      'Performance': '#9C27B0'
+    };
     
-    selectLearningItem(itemId);
-    
-    // Add to disciplines
-    const item = learningItems.find(item => item.id === itemId);
-    if (item) {
-      addDiscipline({
-        title: `Learn: ${item.title}`,
-        description: `Complete today's learning on ${item.category}`,
-        reminderTime: '12:00'
-      });
-    }
+    return categoryColors[category] || colorScheme.primary;
   };
   
-  const handleCompleteItem = () => {
-    if (selectedItemId) {
-      completeLearningItem(selectedItemId);
-    }
-  };
-  
-  const toggleExpandItem = (itemId: string) => {
-    setExpandedItemId(expandedItemId === itemId ? null : itemId);
-  };
-  
-  const getTodayItems = () => {
-    return learningItems.filter(item => item.date === getTodayDateString());
-  };
-  
-  const isItemSelected = (itemId: string) => {
-    return selectedItemId === itemId;
-  };
-  
-  const renderDashboard = () => {
+  const renderWeekDay = (isCompleted, index) => {
+    const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     return (
-      <View style={styles.dashboardContainer}>
-        <LearningStreakCard 
-          currentStreak={currentStreak}
-          weeklyProgress={weeklyProgress}
+      <View key={index} style={styles.weekDayContainer}>
+        <View 
+          style={[
+            styles.weekDayCircle, 
+            { 
+              backgroundColor: isCompleted 
+                ? colorScheme.primary 
+                : 'transparent',
+              borderColor: isCompleted 
+                ? colorScheme.primary 
+                : colorScheme.border
+            }
+          ]}
         />
-      </View>
-    );
-  };
-  
-  const renderLearningItems = () => {
-    const todayItems = getTodayItems();
-    
-    if (todayItems.length === 0) {
-      return (
-        <Card style={styles.emptyCard}>
-          <Text style={[styles.emptyText, { color: colorScheme.text.secondary }]}>
-            No learning items available for today.
-          </Text>
-        </Card>
-      );
-    }
-    
-    return (
-      <View style={styles.learningItemsContainer}>
-        <Text style={[styles.sectionTitle, { color: colorScheme.text.primary }]}>Today's Focus</Text>
-        {todayItems.map(item => (
-          <Card key={item.id} style={styles.learningCard} variant="elevated">
-            <TouchableOpacity 
-              style={styles.itemHeader}
-              onPress={() => toggleExpandItem(item.id)}
-            >
-              <Text style={[styles.itemTitle, { color: colorScheme.text.primary }]}>{item.title}</Text>
-              {expandedItemId === item.id ? (
-                <ChevronDown size={20} color={colorScheme.text.muted} />
-              ) : (
-                <ChevronRight size={20} color={colorScheme.text.muted} />
-              )}
-            </TouchableOpacity>
-            
-            {expandedItemId === item.id && (
-              <View style={styles.expandedContent}>
-                <Text style={[styles.itemContent, { color: colorScheme.text.secondary }]}>{item.content}</Text>
-              </View>
-            )}
-            
-            {!isItemSelected(item.id) ? (
-              <Button
-                title="Select as Today's Learning"
-                onPress={() => handleSelectItem(item.id)}
-                style={styles.selectButton}
-              />
-            ) : (
-              <View style={[styles.selectedContainer, { borderTopColor: colorScheme.border }]}>
-                <Text style={[styles.selectedText, { color: colorScheme.primary }]}>
-                  Selected for today's learning
-                </Text>
-                <Button
-                  title={isItemCompleted(item.id) ? "Completed" : "Mark as Complete"}
-                  onPress={handleCompleteItem}
-                  disabled={isItemCompleted(item.id)}
-                  icon={isItemCompleted(item.id) ? <Check size={18} color={colorScheme.text.primary} /> : undefined}
-                  style={styles.completeButton}
-                />
-              </View>
-            )}
-          </Card>
-        ))}
+        <Text style={[styles.weekDayText, { color: colorScheme.text.secondary }]}>
+          {days[index]}
+        </Text>
       </View>
     );
   };
@@ -148,15 +69,57 @@ export default function LearnScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colorScheme.background }]} edges={['top']}>
       <HeaderBar 
         title="Daily Learning" 
-        date={formatDate(new Date())} 
+        showDate 
+        rightIcon={
+          <TouchableOpacity onPress={() => router.push('/learning/history')}>
+            <Calendar size={24} color={colorScheme.text.primary} />
+          </TouchableOpacity>
+        }
       />
       
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.contentContainer}
-      >
-        {renderDashboard()}
-        {renderLearningItems()}
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Streak Card */}
+        <Card style={styles.streakCard}>
+          <View style={styles.streakHeader}>
+            <Text style={[styles.streakTitle, { color: colorScheme.text.primary }]}>
+              {currentStreak > 0 
+                ? `${currentStreak} Day Streak!` 
+                : "Start Your Streak Today"}
+            </Text>
+            <BookOpen size={20} color={colorScheme.primary} />
+          </View>
+          
+          <View style={styles.weekContainer}>
+            {weeklyProgress.map((isCompleted, index) => renderWeekDay(isCompleted, index))}
+          </View>
+        </Card>
+        
+        <Text style={[styles.sectionTitle, { color: colorScheme.text.primary }]}>
+          Today's Learning
+        </Text>
+        
+        {/* Featured Learning Items */}
+        {featuredItems.map((item, index) => (
+          <LearnCard
+            key={index}
+            category={item.category}
+            title={item.title}
+            content={item.content}
+            icon={<BookOpen size={20} color="#FFFFFF" />}
+            color={getCategoryColor(item.category)}
+          />
+        ))}
+        
+        {/* View History Button */}
+        <TouchableOpacity 
+          style={[styles.historyButton, { borderColor: colorScheme.border }]}
+          onPress={() => router.push('/learning/history')}
+        >
+          <Text style={[styles.historyButtonText, { color: colorScheme.text.primary }]}>
+            View Learning History
+          </Text>
+          <ChevronRight size={20} color={colorScheme.text.primary} />
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -166,75 +129,58 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
+  scrollContent: {
+    padding: 16,
     paddingBottom: 32,
   },
-  dashboardContainer: {
-    marginTop: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 16,
-    paddingHorizontal: 16,
-  },
-  learningItemsContainer: {
-    marginBottom: 16,
-  },
-  learningCard: {
+  streakCard: {
     padding: 16,
-    marginHorizontal: 16,
+    marginBottom: 24,
+  },
+  streakHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
-  itemHeader: {
+  streakTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  weekContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  itemTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    flex: 1,
-  },
-  expandedContent: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#333',
-  },
-  itemContent: {
-    fontSize: 16,
-    marginBottom: 20,
-    lineHeight: 24,
-  },
-  selectButton: {
-    marginTop: 8,
-  },
-  selectedContainer: {
-    marginTop: 16,
-    borderTopWidth: 1,
-    paddingTop: 16,
-  },
-  selectedText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  completeButton: {
-    backgroundColor: '#4CAF50',
-  },
-  emptyCard: {
-    padding: 20,
-    marginHorizontal: 16,
+  weekDayContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  emptyText: {
+  weekDayCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginBottom: 4,
+  },
+  weekDayText: {
+    fontSize: 12,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  historyButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 16,
+  },
+  historyButtonText: {
     fontSize: 16,
-    textAlign: 'center',
+    fontWeight: '500',
   },
 });

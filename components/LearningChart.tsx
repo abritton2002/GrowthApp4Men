@@ -1,8 +1,19 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import Svg, { G, Line, Rect, Text as SvgText } from 'react-native-svg';
-import colors from '@/constants/colors';
+import { View, StyleSheet, Dimensions, Platform, Text as RNText } from 'react-native';
 import { useThemeStore } from '@/store/theme-store';
+import colors from '@/constants/colors';
+
+// Use conditional import for web compatibility
+let Svg, G, Line, Rect, Text;
+if (Platform.OS !== 'web') {
+  // Import for native platforms
+  const SvgComponents = require('react-native-svg');
+  Svg = SvgComponents.Svg;
+  G = SvgComponents.G;
+  Line = SvgComponents.Line;
+  Rect = SvgComponents.Rect;
+  Text = SvgComponents.Text;
+}
 
 interface LearningChartProps {
   data: {
@@ -16,6 +27,41 @@ export default function LearningChart({ data }: LearningChartProps) {
   const theme = useThemeStore(state => state.theme);
   const colorScheme = theme === 'dark' ? colors.dark : colors.light;
   
+  // Always render the simplified version for web
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.webContainer}>
+        {data.map((item, index) => (
+          <View key={index} style={styles.webChartItem}>
+            <View style={styles.webChartLabelContainer}>
+              <View style={[styles.webChartColorDot, { backgroundColor: getCategoryColor(index, colorScheme) }]} />
+              <View style={styles.webChartLabel}>
+                <RNText style={[styles.webChartLabelText, { color: colorScheme.text.primary }]}>
+                  {item.category}
+                </RNText>
+                <RNText style={[styles.webChartLabelValue, { color: colorScheme.text.secondary }]}>
+                  {item.completed} completed
+                </RNText>
+              </View>
+            </View>
+            <View style={[styles.webChartBar, { backgroundColor: colorScheme.cardBackgroundAlt || '#e0e0e0' }]}>
+              <View 
+                style={[
+                  styles.webChartFill, 
+                  { 
+                    backgroundColor: getCategoryColor(index, colorScheme),
+                    width: `${(item.completed / Math.max(item.total, 1)) * 100}%` 
+                  }
+                ]} 
+              />
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  }
+  
+  // Native implementation with SVG
   const chartWidth = Dimensions.get('window').width - 48;
   const chartHeight = 200;
   const barWidth = (chartWidth - 40) / Math.min(data.length, 10); // Ensure bars fit even with many categories
@@ -24,23 +70,6 @@ export default function LearningChart({ data }: LearningChartProps) {
   // Calculate scale for y-axis
   const yScale = (value: number) => {
     return chartHeight - 40 - ((value / maxValue) * (chartHeight - 60));
-  };
-  
-  // Generate category colors
-  const getCategoryColor = (index: number) => {
-    const categoryColors = [
-      colorScheme.primary,
-      colorScheme.secondary,
-      '#4CAF50',
-      '#FF9800',
-      '#9C27B0',
-      '#2196F3',
-      '#E91E63',
-      '#00BCD4',
-      '#FFEB3B',
-      '#795548',
-    ];
-    return categoryColors[index % categoryColors.length];
   };
   
   return (
@@ -53,7 +82,7 @@ export default function LearningChart({ data }: LearningChartProps) {
             y1={10}
             x2={30}
             y2={chartHeight - 30}
-            stroke={colorScheme.chart.grid}
+            stroke={colorScheme.chart?.grid || colorScheme.border}
             strokeWidth={1}
           />
           
@@ -63,7 +92,7 @@ export default function LearningChart({ data }: LearningChartProps) {
             y1={chartHeight - 30}
             x2={chartWidth - 10}
             y2={chartHeight - 30}
-            stroke={colorScheme.chart.grid}
+            stroke={colorScheme.chart?.grid || colorScheme.border}
             strokeWidth={1}
           />
           
@@ -75,10 +104,10 @@ export default function LearningChart({ data }: LearningChartProps) {
                 y1={yScale(value)}
                 x2={32}
                 y2={yScale(value)}
-                stroke={colorScheme.chart.grid}
+                stroke={colorScheme.chart?.grid || colorScheme.border}
                 strokeWidth={1}
               />
-              <SvgText
+              <Text
                 x={25}
                 y={yScale(value) + 4}
                 fontSize={10}
@@ -86,7 +115,7 @@ export default function LearningChart({ data }: LearningChartProps) {
                 textAnchor="end"
               >
                 {Math.round(value)}
-              </SvgText>
+              </Text>
             </G>
           ))}
           
@@ -104,7 +133,7 @@ export default function LearningChart({ data }: LearningChartProps) {
                   y={yScale(item.total)}
                   width={barWidth - 10}
                   height={totalHeight}
-                  fill={colorScheme.chart.grid}
+                  fill={colorScheme.chart?.grid || colorScheme.border}
                   opacity={0.3}
                   rx={4}
                 />
@@ -115,12 +144,12 @@ export default function LearningChart({ data }: LearningChartProps) {
                   y={yScale(item.completed)}
                   width={barWidth - 10}
                   height={completedHeight}
-                  fill={getCategoryColor(index)}
+                  fill={getCategoryColor(index, colorScheme)}
                   rx={4}
                 />
                 
                 {/* Category label */}
-                <SvgText
+                <Text
                   x={x + (barWidth - 10) / 2}
                   y={chartHeight - 15}
                   fontSize={9}
@@ -128,7 +157,7 @@ export default function LearningChart({ data }: LearningChartProps) {
                   textAnchor="middle"
                 >
                   {item.category.substring(0, 4)}
-                </SvgText>
+                </Text>
               </G>
             );
           })}
@@ -138,6 +167,23 @@ export default function LearningChart({ data }: LearningChartProps) {
   );
 }
 
+// Helper function to get category colors
+function getCategoryColor(index: number, colorScheme: any) {
+  const categoryColors = [
+    colorScheme.primary,
+    colorScheme.secondary,
+    '#4CAF50',
+    '#FF9800',
+    '#9C27B0',
+    '#2196F3',
+    '#E91E63',
+    '#00BCD4',
+    '#FFEB3B',
+    '#795548',
+  ];
+  return categoryColors[index % categoryColors.length];
+}
+
 const styles = StyleSheet.create({
   container: {
     marginVertical: 8,
@@ -145,5 +191,45 @@ const styles = StyleSheet.create({
   chartContainer: {
     paddingHorizontal: 8,
     alignItems: 'center',
+  },
+  // Web-specific styles
+  webContainer: {
+    width: '100%',
+    paddingVertical: 8,
+  },
+  webChartItem: {
+    marginBottom: 16,
+  },
+  webChartLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  webChartColorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  webChartLabel: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flex: 1,
+  },
+  webChartLabelText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  webChartLabelValue: {
+    fontSize: 14,
+  },
+  webChartBar: {
+    height: 8,
+    borderRadius: 4,
+    width: '100%',
+  },
+  webChartFill: {
+    height: 8,
+    borderRadius: 4,
   },
 });
