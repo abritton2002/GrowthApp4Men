@@ -82,6 +82,7 @@ function RootLayoutNav() {
         contentStyle: {
           backgroundColor: colorScheme.background,
         },
+        headerShown: false, // Hide all headers by default and use custom headers
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -90,6 +91,7 @@ function RootLayoutNav() {
         options={{ 
           title: "Edit Discipline",
           presentation: "modal",
+          headerShown: false,
         }} 
       />
       <Stack.Screen 
@@ -97,6 +99,7 @@ function RootLayoutNav() {
         options={{ 
           title: "New Discipline",
           presentation: "modal",
+          headerShown: false,
         }} 
       />
       <Stack.Screen 
@@ -110,30 +113,42 @@ function RootLayoutNav() {
         name="journal/history" 
         options={{ 
           title: "Journal History",
+          headerShown: false,
         }} 
       />
       <Stack.Screen 
         name="journal/entry" 
         options={{ 
           title: "Journal Entry",
+          headerShown: false,
         }} 
       />
       <Stack.Screen 
         name="journal/index" 
         options={{ 
           title: "Journal",
+          headerShown: false,
         }} 
       />
       <Stack.Screen 
         name="wisdom/index" 
         options={{ 
           title: "Wisdom",
+          headerShown: false,
         }} 
       />
       <Stack.Screen 
         name="growth/history" 
         options={{ 
           title: "Growth History",
+          headerShown: false,
+        }} 
+      />
+      <Stack.Screen 
+        name="learning/history" 
+        options={{ 
+          title: "Learning History",
+          headerShown: false,
         }} 
       />
       <Stack.Screen 

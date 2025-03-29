@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Check, ChevronRight } from 'lucide-react-native';
+import { Check, ChevronRight, ChevronDown } from 'lucide-react-native';
 import HeaderBar from '@/components/HeaderBar';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
-import LearningChart from '@/components/LearningChart';
 import LearningStreakCard from '@/components/LearningStreakCard';
 import { useLearnStore } from '@/store/learn-store';
 import { useDisciplinesStore } from '@/store/disciplines-store';
@@ -30,28 +29,10 @@ export default function LearnScreen() {
   
   const addDiscipline = useDisciplinesStore(state => state.addDiscipline);
   
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   
   // Get learning stats
-  const { totalCompleted, currentStreak, weeklyProgress, categoryStats } = getLearningStats();
-  
-  // If there's already a selected item, show that category
-  useEffect(() => {
-    if (selectedItemId) {
-      const item = learningItems.find(item => item.id === selectedItemId);
-      if (item) {
-        setSelectedCategory(item.category);
-      }
-    }
-  }, [selectedItemId, learningItems]);
-  
-  const handleCategorySelect = (category: string) => {
-    if (selectedItemId) {
-      // If an item is already selected, don't allow changing categories
-      return;
-    }
-    setSelectedCategory(category);
-  };
+  const { currentStreak, weeklyProgress } = getLearningStats();
   
   const handleSelectItem = (itemId: string) => {
     if (selectedItemId) {
@@ -78,11 +59,12 @@ export default function LearnScreen() {
     }
   };
   
-  const getCategoryItems = (category: string) => {
-    return learningItems.filter(item => 
-      item.category === category && 
-      item.date === getTodayDateString()
-    );
+  const toggleExpandItem = (itemId: string) => {
+    setExpandedItemId(expandedItemId === itemId ? null : itemId);
+  };
+  
+  const getTodayItems = () => {
+    return learningItems.filter(item => item.date === getTodayDateString());
   };
   
   const isItemSelected = (itemId: string) => {
@@ -96,67 +78,18 @@ export default function LearnScreen() {
           currentStreak={currentStreak}
           weeklyProgress={weeklyProgress}
         />
-        
-        <LearningChart data={categoryStats} />
-      </View>
-    );
-  };
-  
-  const renderCategories = () => {
-    return (
-      <View style={styles.categoriesContainer}>
-        <Text style={[styles.sectionTitle, { color: colorScheme.text.primary }]}>Select a Focus Area</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesScroll}
-        >
-          {categories.map(category => (
-            <TouchableOpacity
-              key={category}
-              style={[
-                styles.categoryCard,
-                { 
-                  backgroundColor: colorScheme.cardBackground,
-                  borderColor: colorScheme.border
-                },
-                selectedCategory === category && {
-                  borderColor: colorScheme.primary,
-                  backgroundColor: colorScheme.cardBackgroundAlt
-                },
-                selectedItemId && selectedCategory !== category && {
-                  opacity: 0.5
-                }
-              ]}
-              onPress={() => handleCategorySelect(category)}
-              disabled={selectedItemId !== null && selectedCategory !== category}
-            >
-              <Text 
-                style={[
-                  styles.categoryTitle,
-                  { color: colorScheme.text.primary },
-                  selectedCategory === category && { color: colorScheme.primary }
-                ]}
-              >
-                {category}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
       </View>
     );
   };
   
   const renderLearningItems = () => {
-    if (!selectedCategory) return null;
+    const todayItems = getTodayItems();
     
-    const items = getCategoryItems(selectedCategory);
-    
-    if (items.length === 0) {
+    if (todayItems.length === 0) {
       return (
         <Card style={styles.emptyCard}>
           <Text style={[styles.emptyText, { color: colorScheme.text.secondary }]}>
-            No learning items available for this category today.
+            No learning items available for today.
           </Text>
         </Card>
       );
@@ -165,10 +98,25 @@ export default function LearnScreen() {
     return (
       <View style={styles.learningItemsContainer}>
         <Text style={[styles.sectionTitle, { color: colorScheme.text.primary }]}>Today's Focus</Text>
-        {items.map(item => (
+        {todayItems.map(item => (
           <Card key={item.id} style={styles.learningCard} variant="elevated">
-            <Text style={[styles.itemTitle, { color: colorScheme.text.primary }]}>{item.title}</Text>
-            <Text style={[styles.itemContent, { color: colorScheme.text.secondary }]}>{item.content}</Text>
+            <TouchableOpacity 
+              style={styles.itemHeader}
+              onPress={() => toggleExpandItem(item.id)}
+            >
+              <Text style={[styles.itemTitle, { color: colorScheme.text.primary }]}>{item.title}</Text>
+              {expandedItemId === item.id ? (
+                <ChevronDown size={20} color={colorScheme.text.muted} />
+              ) : (
+                <ChevronRight size={20} color={colorScheme.text.muted} />
+              )}
+            </TouchableOpacity>
+            
+            {expandedItemId === item.id && (
+              <View style={styles.expandedContent}>
+                <Text style={[styles.itemContent, { color: colorScheme.text.secondary }]}>{item.content}</Text>
+              </View>
+            )}
             
             {!isItemSelected(item.id) ? (
               <Button
@@ -208,7 +156,6 @@ export default function LearnScreen() {
         contentContainerStyle={styles.contentContainer}
       >
         {renderDashboard()}
-        {renderCategories()}
         {renderLearningItems()}
       </ScrollView>
     </SafeAreaView>
@@ -234,37 +181,29 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 16,
   },
-  categoriesContainer: {
-    marginBottom: 24,
-  },
-  categoriesScroll: {
-    paddingHorizontal: 16,
-    paddingRight: 32,
-  },
-  categoryCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginRight: 12,
-    borderWidth: 1,
-    minWidth: 120,
-  },
-  categoryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
   learningItemsContainer: {
     marginBottom: 16,
   },
   learningCard: {
-    padding: 24,
+    padding: 16,
     marginHorizontal: 16,
     marginBottom: 16,
   },
+  itemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   itemTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    marginBottom: 12,
+    flex: 1,
+  },
+  expandedContent: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#333',
   },
   itemContent: {
     fontSize: 16,

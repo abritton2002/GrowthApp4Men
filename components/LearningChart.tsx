@@ -17,8 +17,8 @@ export default function LearningChart({ data }: LearningChartProps) {
   const colorScheme = theme === 'dark' ? colors.dark : colors.light;
   
   const chartWidth = Dimensions.get('window').width - 48;
-  const chartHeight = 180;
-  const barWidth = (chartWidth - 40) / data.length;
+  const chartHeight = 200;
+  const barWidth = (chartWidth - 40) / Math.min(data.length, 10); // Ensure bars fit even with many categories
   const maxValue = Math.max(...data.map(item => item.total), 5);
   
   // Calculate scale for y-axis
@@ -35,14 +35,16 @@ export default function LearningChart({ data }: LearningChartProps) {
       '#FF9800',
       '#9C27B0',
       '#2196F3',
+      '#E91E63',
+      '#00BCD4',
+      '#FFEB3B',
+      '#795548',
     ];
     return categoryColors[index % categoryColors.length];
   };
   
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { color: colorScheme.text.primary }]}>Learning Progress</Text>
-      
       <View style={styles.chartContainer}>
         <Svg width={chartWidth} height={chartHeight}>
           {/* Y-axis */}
@@ -83,7 +85,7 @@ export default function LearningChart({ data }: LearningChartProps) {
                 fill={colorScheme.text.secondary}
                 textAnchor="end"
               >
-                {value}
+                {Math.round(value)}
               </SvgText>
             </G>
           ))}
@@ -132,55 +134,16 @@ export default function LearningChart({ data }: LearningChartProps) {
           })}
         </Svg>
       </View>
-      
-      <View style={styles.legendContainer}>
-        {data.map((item, index) => (
-          <View key={`legend-${index}`} style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: getCategoryColor(index) }]} />
-            <Text style={[styles.legendText, { color: colorScheme.text.secondary }]}>
-              {item.category} ({item.completed}/{item.total})
-            </Text>
-          </View>
-        ))}
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
-    paddingHorizontal: 16,
+    marginVertical: 8,
   },
   chartContainer: {
     paddingHorizontal: 8,
     alignItems: 'center',
-  },
-  legendContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginTop: 8,
-    paddingHorizontal: 16,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 16,
-    marginBottom: 8,
-  },
-  legendColor: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 6,
-  },
-  legendText: {
-    fontSize: 12,
   },
 });

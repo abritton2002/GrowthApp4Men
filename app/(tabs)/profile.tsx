@@ -16,12 +16,14 @@ import {
   Settings, 
   TrendingUp, 
   ChevronRight,
-  Edit3
+  Edit3,
+  BookOpen
 } from 'lucide-react-native';
 import Card from '@/components/Card';
 import { useProfileStore } from '@/store/profile-store';
 import { useDisciplinesStore } from '@/store/disciplines-store';
 import { useJournalStore } from '@/store/journal-store';
+import { useLearnStore } from '@/store/learn-store';
 import colors from '@/constants/colors';
 import typography from '@/constants/typography';
 import { useThemeStore } from '@/store/theme-store';
@@ -31,12 +33,16 @@ export default function ProfileScreen() {
   const profile = useProfileStore(state => state.profile);
   const completionHistory = useDisciplinesStore(state => state.completionHistory);
   const journalEntries = useJournalStore(state => state.getAllEntries());
+  const { getLearningStats } = useLearnStore();
   const theme = useThemeStore(state => state.theme);
   const colorScheme = theme === 'dark' ? colors.dark : colors.light;
   
   // Calculate stats
   const totalDays = completionHistory ? Object.keys(completionHistory).length : 0;
   const journalCount = journalEntries.length;
+  
+  // Get learning stats
+  const { totalCompleted } = getLearningStats();
   
   // Calculate streak
   const streakCount = calculateStreak(completionHistory);
@@ -51,6 +57,10 @@ export default function ProfileScreen() {
   
   const navigateToJournalHistory = () => {
     router.push('/journal/history');
+  };
+  
+  const navigateToLearningHistory = () => {
+    router.push('/learning/history');
   };
   
   const navigateToEditProfile = () => {
@@ -110,8 +120,8 @@ export default function ProfileScreen() {
           </View>
           
           <View style={[styles.statCard, { backgroundColor: colorScheme.cardBackground }]}>
-            <Text style={[styles.statValue, { color: colorScheme.text.primary }]}>{journalCount}</Text>
-            <Text style={[styles.statLabel, { color: colorScheme.text.secondary }]}>Entries</Text>
+            <Text style={[styles.statValue, { color: colorScheme.text.primary }]}>{totalCompleted}</Text>
+            <Text style={[styles.statLabel, { color: colorScheme.text.secondary }]}>Learned</Text>
           </View>
         </View>
         
@@ -136,6 +146,18 @@ export default function ProfileScreen() {
                 <BookText size={20} color={colorScheme.text.primary} />
               </View>
               <Text style={[styles.menuText, { color: colorScheme.text.primary }]}>Journal History</Text>
+              <ChevronRight size={20} color={colorScheme.text.muted} />
+            </View>
+          </Card>
+        </TouchableOpacity>
+        
+        <TouchableOpacity onPress={navigateToLearningHistory}>
+          <Card style={styles.menuCard}>
+            <View style={styles.menuItem}>
+              <View style={[styles.menuIconContainer, { backgroundColor: colorScheme.cardBackgroundAlt }]}>
+                <BookOpen size={20} color={colorScheme.text.primary} />
+              </View>
+              <Text style={[styles.menuText, { color: colorScheme.text.primary }]}>Learning History</Text>
               <ChevronRight size={20} color={colorScheme.text.muted} />
             </View>
           </Card>
